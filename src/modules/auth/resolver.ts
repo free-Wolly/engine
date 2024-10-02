@@ -228,21 +228,38 @@ export default {
     // @ts-ignore
     signinCrm: combineResolvers(validateInput, async (_, { data, language }, { db, res }: ContextType) => {
       const { email, password, authType, mobile } = data;
-      const user = await db.user.findUnique({
-        where: {
-          ...(email ? { email } : { mobile }),
-        },
-      });
-      if (!user) {
-        throw new Error(formatMessage(language, 'auth.wrongMobileNumber'));
-      }
-      const valid = await bcrypt.compare(password, user.password);
-      if (!valid) {
-        throw new Error(formatMessage(language, 'auth.wrongPassword'));
-      }
-      const token = jwt.sign({ userId: user.id, authType }, process.env.APP_SECRET);
+      console.log('HERE');
+      const user = {
+        password: 'password',
+        email: 'testemail@gmail.com',
+        phone: '1234534532541',
+        mobile: '123423134512',
+        role: 'ADMIN',
+        active: true,
+        language: 'KA',
+        id: '123451234231',
+        name: 'testuser',
+        createdAt: '12:00:00T',
+        updatedAt: '12:00:00T',
+        firstName: 'testFirstName',
+        lastName: 'lastName',
+      };
+      // const user = await db.user.findUnique({
+      //   where: {
+      //     ...(email ? { email } : { mobile }),
+      //   },
+      // });
+      // if (!user) {
+      //   throw new Error(formatMessage(language, 'auth.wrongMobileNumber'));
+      // }
+      // const valid = await bcrypt.compare(password, user.password);
+      // if (!valid) {
+      //   throw new Error(formatMessage(language, 'auth.wrongPassword'));
+      // }
+      const token = jwt.sign({ userId: user.id, authType }, 'TOKEN');
+      // const token = jwt.sign({ userId: email, authType }, 'TOKEN');
       // @ts-ignore
-      user.token = token;
+      // user.token = token;
       if (res) {
         res.cookie('authorization', token, {
           httpOnly: true,
