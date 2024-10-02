@@ -1,0 +1,5 @@
+export enum ONGOIND_ORDER_STATUS {
+  NEW,
+  IN_PROGRESS,
+  DISPATCHED,
+}

@@ -1,0 +1,472 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ServiceType {
+  AFTER_RENOVATION
+  GENERAL_CLEANING
+  REGULAR_CLEANING
+  CHEMICAL_CLEANING
+  MAID
+  SWIMMING_POOL_CLEANING
+}
+
+enum ServiceSubType {
+  BASIC
+  STANDART
+  PREMIUM
+}
+
+enum AlertType {
+  ORDER
+  EMERGENCY
+  OTHER
+}
+
+enum UserRole {
+  ADMIN
+  MANAGER
+}
+
+enum OrderStatus {
+  COMPLETED
+  DRAFT
+  DISPATCHED
+  IN_PROGRESS
+  NEW
+  RATED
+  REJECTED
+  CANCELLED
+  SEEN
+}
+
+// TODO change this to real values
+enum ToolType {
+  VACUUM_CLEANER
+  HEAT_CLEANER
+}
+
+enum PaymentMethod {
+  CASH
+  CREDIT_CARD
+  TERMINAL
+}
+
+enum PaymentStatus {
+  PAID
+  UNPAID
+  PROCESSING
+  DECLINED
+  REFUNDED
+}
+
+enum ExtraService {
+  FRIDGE
+  OVEN
+  IRONING
+  MICROWAVE
+  WARDROBE
+  KITCHEN_INSIDE
+  CURTAINS
+  KITCHEN_HOOD
+  CLOTHES_WASHING
+  WASHING_MACHINE_INSIDE
+}
+
+enum Speciality {
+  GENERAL_CLEANER
+  WINDOW_CLEANER
+  MAID
+}
+
+enum Language {
+  KA
+  EN
+  RU
+}
+
+enum PoolType {
+  INDOOR
+  OUTDOOR
+}
+
+model MaxLimit {
+  id        Int      @id @default(autoincrement())
+  maxLimit  Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model DailyOrderLimit {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  date      String   @unique
+  limit     Int      @default(2)
+}
+
+model User {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  firstName String
+  lastName  String
+  password  String
+  email     String   @unique
+  mobile    String   @unique
+  role      UserRole
+  address   Address?
+  active    Boolean  @default(true)
+  deleted   Boolean  @default(false)
+  language  Language @default(KA)
+}
+
+model Country {
+  name      String   @unique
+  code      String   @unique
+  City      City[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+}
+
+model City {
+  id          String    @id @default(cuid())
+  name        String    @unique
+  country     Country   @relation(fields: [countryCode], references: [code])
+  countryCode String
+  Address     Address[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Tool {
+  id             String     @id @default(cuid())
+  name           String     @unique
+  description    String
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  isAvailable    Boolean    @default(true)
+  busyTimes      BusyTime[]
+  toolType       ToolType
+  deleted        Boolean    @default(false)
+  assignedOrders Order[]
+}
+
+model Alert {
+  id        String    @id @default(cuid())
+  message   String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  seen      Boolean   @default(false)
+  type      AlertType
+  orderId   String
+  order     Order     @relation(fields: [orderId], references: [id])
+}
+
+model OrderReview {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  rating    Float
+  comment   String?
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+
+model ClientReview {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  rating    Float
+  comment   String?
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  clientId  String
+  client    Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  deleted   Boolean  @default(false)
+}
+
+model Client {
+  id                   String         @id @default(cuid())
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+  firstName            String?
+  lastName             String?
+  password             String?
+  email                String?        @unique
+  mobile               String         @unique
+  rating               Float?
+  verificationCode     String?
+  addresses            Address[]
+  isVerified           Boolean?       @default(false)
+  language             Language       @default(KA)
+  photo                String?
+  smsEnabled           Boolean        @default(false)
+  notificationsEnabled Boolean        @default(false)
+  deleted              Boolean        @default(false)
+  clientReviews        ClientReview[]
+  orders               Order[]
+  birthDate            DateTime?
+  isSimpleClient       Boolean        @default(false)
+  pushToken            String?
+  Payments             Payments[]
+  Chat                 Chat[]
+}
+
+model Payments {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  paymentId String
+  status    String
+  currency  String
+  amount    Float
+  client    Client?  @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  clientId  String?
+  // Order     Order?
+}
+
+model Message {
+  id              String   @id @default(cuid())
+  text            String?
+  image           String?
+  video           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  sentBySupportId String?
+  sentByClientId  String?
+  chat            Chat     @relation(fields: [chatUUID], references: [chatUUID], onDelete: Cascade)
+  chatUUID        String
+}
+
+model Chat {
+  id            String    @id @default(cuid())
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @default(now()) @updatedAt
+  client        Client?   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  clientId      String?
+  guestClientId String?
+  chatUUID      String    @unique
+  messages      Message[]
+}
+
+model Address {
+  id        String     @id @default(cuid())
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  cityId    String
+  city      City       @relation(fields: [cityId], references: [id])
+  details   String?
+  street    String
+  latitude  Float?
+  longitude Float?
+  client    Client?    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  clientId  String?
+  // employee   Employee? @relation(fields: [employeeId], references: [id])
+  // employeeId String?   @unique
+  user      User?      @relation(fields: [userId], references: [id])
+  userId    String?    @unique
+  deleted   Boolean    @default(false)
+  entrance  String?
+  floor     String?
+  apartment String?
+  Order     Order[]
+  Employee  Employee[]
+}
+
+model Employee {
+  id                  String              @id @default(cuid())
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  firstName           String
+  lastName            String
+  email               String?             @unique
+  mobile              String              @unique
+  password            String?
+  emergencyContact    String?
+  verificationCode    String?
+  speakingLanguages   Language[]
+  isAvailable         Boolean             @default(true)
+  salary              Float
+  rating              Float?              @default(0)
+  specialities        Speciality[]
+  busyTimes           BusyTime[]
+  workingDaysAndHours WorkingDayAndHour[]
+  address             Address?            @relation(fields: [addressId], references: [id])
+  addressId           String?
+  photo               String?
+  deleted             Boolean             @default(false)
+  assignedOrders      Order[]
+  isTeamLead          Boolean             @default(false)
+}
+
+model ApartmentCleaning {
+  id             String   @id @default(cuid())
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  area           Int?
+  balconyArea    Int?
+  bathroom       Int?
+  bedroom        Int?
+  cabinet        Int?
+  kitchen        Int?
+  livingRoom     Int?
+  studio         Int?
+  fridge         Boolean?
+  oven           Boolean?
+  // ironing              Boolean?
+  // microwave            Boolean?
+  wardrobe       Boolean?
+  kitchenInside  Boolean?
+  curtains       Int?
+  // kitchenHood          Boolean?
+  clothesWashing Int?
+  // washingMachineInside Boolean?
+  petExists      Boolean? @default(false)
+  premiumLiquids Boolean? @default(false)
+  order          Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId        String   @unique
+}
+
+model Order {
+  id                   String                @id @default(cuid())
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  client               Client                @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  clientId             String
+  status               OrderStatus
+  comment              String?
+  startTime            DateTime
+  endTime              DateTime
+  duration             Int
+  closedAt             DateTime?
+  seenByManager        Boolean               @default(false)
+  assignedEmployees    Employee[]
+  assignedTools        Tool[]
+  paymentMethod        PaymentMethod
+  paymentStatus        PaymentStatus
+  serviceType          ServiceType
+  serviceSubType       ServiceSubType
+  price                Float
+  cleanersQuantity     Int?
+  address              Address               @relation(fields: [addressId], references: [id])
+  addressId            String
+  deleted              Boolean               @default(false)
+  Alert                Alert[]
+  ClientReview         ClientReview[]
+  apartmentCleaning    ApartmentCleaning?
+  OrderReview          OrderReview[]
+  liveStreamRooms      String?
+  chemicalCleaning     ChemicalCleaning?
+  swimmingPoolCleaning SwimmingPoolCleaning?
+  maid                 Maid?
+  // payments             Payments              @relation(fields: [paymentsId], references: [id])
+  // paymentsId           String                @unique
+  OrderEvent           OrderEvent?
+  expense              Int?
+  preOrderNotification Boolean               @default(false)
+  document             Document[]
+}
+
+model Document {
+  id         String    @id @default(cuid())
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  name       String?
+  url        String
+  order      Order?    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId    String?
+  expenses   Expenses? @relation(fields: [expensesId], references: [id])
+  expensesId String?
+}
+
+model OrderEvent {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  eventId   String
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId   String   @unique
+}
+
+model ChemicalCleaning {
+  id              String   @id @default(cuid())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  softChair       Int?
+  armchair        Int?
+  twoSeaterSofa   Int?
+  threeSeaterSofa Int?
+  fourSeaterSofa  Int?
+  fiveSeaterSofa  Int?
+  sixSeaterSofa   Int?
+  mattress        Int?
+  carpet          Int?
+  order           Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId         String   @unique
+}
+
+model SwimmingPoolCleaning {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  poolType    PoolType
+  squareMeter Int
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId     String   @unique
+}
+
+model Maid {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  quantity  Int
+  hours     Int
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId   String   @unique
+}
+
+model WorkingDayAndHour {
+  id           String   @id @default(cuid())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  startWeekday Int
+  endWeekday   Int
+  startTime    String
+  endTime      String
+  employee     Employee @relation(fields: [employeeId], references: [id])
+  employeeId   String
+}
+
+model BusyTime {
+  id                String    @id @default(cuid())
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  unavailableFrom   DateTime?
+  unavailableTo     DateTime?
+  contractStartDate DateTime?
+  contractEndDate   DateTime?
+  daysInMonth       Int?
+  busyFrom          DateTime?
+  busyTo            DateTime?
+  employee          Employee? @relation(fields: [employeeId], references: [id])
+  employeeId        String?
+  tool              Tool?     @relation(fields: [toolId], references: [id])
+  toolId            String?
+  assignedOrderId   String?
+}
+
+model Expenses {
+  id          String     @id @default(cuid())
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  amount      Float
+  description String?
+  date        DateTime
+  document    Document[]
+}
